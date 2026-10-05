@@ -1,0 +1,42 @@
+{
+  "name": "internal-webmail-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "node scripts/bootstrap.js",
+    "db:init": "npm run db:push && npm run db:seed",
+    "vercel-build": "prisma generate && prisma db push && next build"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.18.0",
+    "argon2": "^0.41.1",
+    "clsx": "^2.1.1",
+    "cookies-next": "^4.2.1",
+    "next": "14.2.15",
+    "pino": "^9.1.0",
+    "prisma": "^5.18.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "re2": "^1.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.15",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.4"
+  }
+}

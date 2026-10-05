@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  displayName   String
+  role          Role      @default(USER)
+  signatureHtml String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  messages Message[]
+  threads  Thread[]
+  rules    Rule[]
+  sessions Session[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Thread {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  subject           String
+  lastMessageAt     DateTime
+  participantEmails String[]
+  messages          Message[]
+
+  @@index([userId, lastMessageAt])
+}
+
+model Message {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  threadId        String
+  thread          Thread      @relation(fields: [threadId], references: [id])
+  folder          Folder      @default(INBOX)
+  direction       Direction
+  messageIdHeader String?
+  inReplyTo       String?
+  references      String?
+  fromAddress     String
+  toAddresses     String[]
+  ccAddresses     String[]
+  subject         String
+  bodyHtml        String
+  bodyText        String
+  isRead          Boolean     @default(false)
+  isFlagged       Boolean     @default(false)
+  resendId        String?
+  receivedAt      DateTime    @default(now())
+  searchVector    Unsupported("tsvector")?
+
+  attachments Attachment[]
+
+  @@index([userId, folder])
+}
+
+enum Folder {
+  INBOX
+  SENT
+  DRAFTS
+  TRASH
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id])
+  filename    String
+  contentType String
+  sizeBytes   Int
+  storagePath String
+}
+
+model Rule {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  name           String
+  enabled        Boolean  @default(true)
+  priority       Int
+  stopProcessing Boolean  @default(false)
+  conditionLogic String
+  conditions     Json
+  actions        Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, priority])
+}
