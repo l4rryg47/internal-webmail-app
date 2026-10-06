@@ -161,7 +161,7 @@ export function ReadingPane({ threadId, onReply }: ReadingPaneProps) {
           date={formatDate(message.receivedAt)}
         />
         <MessageBody body={message.bodyHtml || message.bodyText} />
-        {message.attachments.length > 0 && (
+        {message.attachments && message.attachments.length > 0 && (
           <div className="attachments-row">
             {message.attachments.map((attachment) => (
               <div key={attachment.id} className="attachment-chip">

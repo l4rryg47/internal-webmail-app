@@ -146,7 +146,7 @@ export function ThreadList({
                 timestamp: formatTimestamp(message.receivedAt),
                 isUnread: false, // TODO: Add unread status from data
                 isFlagged: false, // TODO: Add flag status from data
-                hasAttachment: message.attachments.length > 0,
+                hasAttachment: message.attachments ? message.attachments.length > 0 : false,
               }}
               isSelected={selectedThreadId === message.id}
               isFocused={selectedIndex === index}

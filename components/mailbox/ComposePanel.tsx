@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { sendMessage } from "@/actions/send-message";
+import "react-quill/dist/quill.snow.css";
+
+// Dynamically import ReactQuill to avoid SSR issues
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 interface ComposePanelProps {
   isOpen: boolean;
@@ -21,7 +26,7 @@ export function ComposePanel({
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState("");
-  const [text, setText] = useState("");
+  const [html, setHtml] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   if (!isOpen) return null;
@@ -34,7 +39,7 @@ export function ComposePanel({
     formData.append("to", to);
     formData.append("cc", cc);
     formData.append("subject", subject);
-    formData.append("text", text);
+    formData.append("html", html);
 
     const result = await sendMessage(formData);
 
@@ -46,11 +51,32 @@ export function ComposePanel({
       setTo("");
       setCc("");
       setSubject("");
-      setText("");
+      setHtml("");
     } else {
       alert(result.error || "Failed to send message");
     }
   };
+
+  const quillModules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline", "strike"],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["link"],
+      ["clean"],
+    ],
+  };
+
+  const quillFormats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "list",
+    "bullet",
+    "link",
+  ];
 
   return (
     <div className={`compose-panel ${isMinimized ? "minimized" : ""}`}>
@@ -121,14 +147,17 @@ export function ComposePanel({
               onChange={(e) => setSubject(e.target.value)}
               disabled={isSending}
             />
-            <textarea
-              className="compose-textarea"
-              placeholder="Write your message here..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              required
-              disabled={isSending}
-            />
+            <div style={{ minHeight: "200px" }}>
+              <ReactQuill
+                theme="snow"
+                value={html}
+                onChange={setHtml}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Write your message here..."
+                style={{ height: "200px" }}
+              />
+            </div>
             <div className="compose-footer">
               <button type="submit" className="action-button primary" disabled={isSending}>
                 {isSending ? "Sending..." : "Send"}

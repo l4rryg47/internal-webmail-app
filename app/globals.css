@@ -18,6 +18,57 @@
   --border: #dbe4f0;
 }
 
+/* Quill editor styles */
+.ql-container {
+  font-family: -apple-system, "Segoe UI", Inter, sans-serif;
+  font-size: 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0 0 6px 6px;
+  background: var(--surface-raised);
+}
+
+.ql-toolbar {
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: var(--surface-base);
+  padding: 8px;
+}
+
+.ql-toolbar button {
+  border: none;
+  background: none;
+  border-radius: 4px;
+  padding: 4px;
+  color: var(--text-secondary);
+}
+
+.ql-toolbar button:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.ql-toolbar button.ql-active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.ql-editor {
+  min-height: 200px;
+  padding: 12px;
+  line-height: 1.6;
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--text-secondary);
+  font-style: normal;
+}
+
+.ql-editor a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; font-family: -apple-system, "Segoe UI", Inter, sans-serif; background: var(--bg); color: var(--primary); }
 body { min-height: 100vh; }
