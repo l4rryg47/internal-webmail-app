@@ -24,6 +24,7 @@ export default async function MailPage() {
     <AppShell
       userRole={user.role}
       userEmail={user.email}
+      folderCounts={folderCounts}
     />
   );
 }
