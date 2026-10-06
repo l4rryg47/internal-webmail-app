@@ -17,6 +17,15 @@ export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRail
     return email.slice(0, 2).toUpperCase();
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
     <div className="app-rail">
       <div
@@ -67,6 +76,18 @@ export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRail
         <div style={{ fontSize: "12px", fontWeight: "500" }}>
           {getInitials(userEmail)}
         </div>
+      </div>
+
+      <div
+        className="app-rail-item"
+        onClick={handleLogout}
+        title="Logout"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
       </div>
     </div>
   );
