@@ -6,20 +6,21 @@ Use this checklist when deploying the internal webmail app to Vercel with a Supa
 
 - [ ] Create a Supabase project
 - [ ] Open the project dashboard
-- [ ] Copy the Postgres connection string for the pooled DB URL
-- [ ] Copy the direct connection string for the non-pooled DB URL
+- [ ] In Supabase → Connect, select the Session pooler connection string (port `5432`); use it for `DIRECT_URL`
+- [ ] Use the Transaction pooler connection string (port `6543`) for `DATABASE_URL`
+- [ ] Use the pooler-provided username (commonly `postgres.[PROJECT-REF]`) and URL-encode special characters in the password
 - [ ] Save both values for the Vercel environment variables
 
 Typical values:
 
-- `DATABASE_URL`: pooled connection string (recommended for runtime)
-- `DIRECT_URL`: direct connection string (recommended for Prisma migrations and schema pushes)
+- `DATABASE_URL`: transaction pooler (recommended for serverless runtime)
+- `DIRECT_URL`: session pooler (for Prisma database operations; direct database host may not be reachable from some Vercel build environments)
 
 Example:
 
 ```env
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?pgbouncer=true&connection_limit=1"
-DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+DIRECT_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres?sslmode=require"
 ```
 
 ## 2. Prepare the app
@@ -29,11 +30,27 @@ DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/p
 - [ ] Ensure `.env` is not committed to the repo in production
 - [ ] Verify the project has a valid `vercel-build` script or build command
 
-Recommended build script:
+The Vercel build must not apply database changes. Vercel runs builds for previews and production, and tying compilation to a reachable database can make deployments hang or fail. The project build script should only generate Prisma Client and compile Next.js:
 
 ```json
-"vercel-build": "prisma generate && prisma db push && next build"
+"vercel-build": "prisma generate && next build"
 ```
+
+Apply the Prisma schema separately from a trusted local machine with the project environment loaded:
+
+```powershell
+npm run db:push
+```
+
+The Supabase CLI can authenticate and link the Supabase project, but it does not apply `prisma/schema.prisma` itself. Use Prisma CLI for the schema operation. To authenticate/link the project:
+
+```powershell
+supabase login
+supabase projects list
+supabase link --project-ref <PROJECT-REF>
+```
+
+Keep credentials in local `.env` or your secret manager; never paste connection strings into chat or commit them.
 
 ## 3. Add environment variables in Vercel
 
@@ -80,13 +97,12 @@ BOOTSTRAP_ADMIN_PASSWORD="AdminPassword123!"
 - [ ] Trigger a production deployment
 - [ ] Watch the Vercel build logs
 - [ ] Confirm Prisma generation succeeds
-- [ ] Confirm `prisma db push` succeeds
 - [ ] Confirm the Next.js build succeeds
 
 If the build fails, check:
 
-- [ ] `DATABASE_URL` is valid
-- [ ] `DIRECT_URL` is valid
+- [ ] `DATABASE_URL` is the Supabase transaction pooler URL on port `6543`
+- [ ] `DIRECT_URL` is the Supabase session pooler URL on port `5432`
 - [ ] Prisma schema is valid
 - [ ] No unsupported Prisma features are being used in the runtime environment
 
@@ -114,7 +130,7 @@ If the build fails, check:
 
 - [ ] App is reachable on Vercel
 - [ ] Database is reachable through Supabase
-- [ ] Prisma schema is applied
+- [ ] Prisma schema was applied separately before first use
 - [ ] Admin user can log in
 - [ ] Mail UI and admin routes work
 - [ ] Webhooks and outbound sending are validated

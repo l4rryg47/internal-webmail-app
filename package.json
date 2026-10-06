@@ -14,7 +14,7 @@
     "db:studio": "prisma studio",
     "db:seed": "node scripts/bootstrap.js",
     "db:init": "npm run db:push && npm run db:seed",
-    "vercel-build": "prisma generate && prisma db push && next build"
+    "vercel-build": "prisma generate && next build"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
