@@ -135,7 +135,7 @@ export function ReadingPane({ threadId, onReply }: ReadingPaneProps) {
       <div className="reading-pane">
         <div className="empty-state">
           <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Couldn't load this message</div>
+          <div className="empty-state-title">Couldn&apos;t load this message</div>
           <div className="empty-state-description">Try again</div>
         </div>
       </div>

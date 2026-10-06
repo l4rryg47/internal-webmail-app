@@ -31,7 +31,6 @@ export function ThreadListItem({ thread, isSelected, isFocused, onClick }: Threa
       }}
       tabIndex={0}
       role="button"
-      aria-selected={isSelected}
       aria-label={`${thread.subject} from ${thread.sender}`}
     >
       <div className="thread-header">

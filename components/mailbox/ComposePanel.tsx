@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { sendMessage } from "@/app/actions/send-message";
+import { sendMessage } from "@/actions/send-message";
 
 interface ComposePanelProps {
   isOpen: boolean;
