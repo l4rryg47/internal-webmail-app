@@ -19,10 +19,16 @@ export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRail
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/logout", { method: "POST" });
-      window.location.href = "/login";
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (response.ok) {
+        window.location.replace("/login");
+      } else {
+        console.error("Logout failed:", response.statusText);
+      }
     } catch (error) {
       console.error("Logout failed:", error);
+      // Still redirect even if API call fails
+      window.location.replace("/login");
     }
   };
 
