@@ -4,6 +4,7 @@ import argon2 from "argon2";
 import { clearFailedAttempts, isLocked, recordFailedAttempt } from "@/lib/auth";
 import { ensureMailboxAccess } from "@/lib/authorization";
 import { plainTextToHtml } from "@/lib/email-content";
+import { verifyResendWebhook } from "@/lib/resend-webhook";
 import { evaluateRules } from "@/lib/rules";
 
 describe("email content", () => {
@@ -106,13 +107,27 @@ describe("rules", () => {
 });
 
 describe("webhook verification", () => {
-  it("accepts a valid Resend signature", () => {
-    const secret = "super-secret";
-    const body = JSON.stringify({ event: "email.received", data: { id: "abc" } });
-    const signature = crypto.createHmac("sha256", secret).update(body).digest("base64");
+  it("accepts a valid Svix signature and rejects stale or tampered requests", () => {
+    const secret = `whsec_${crypto.randomBytes(32).toString("base64")}`;
+    const id = "msg_123";
+    const timestamp = "1791282000";
+    const body = JSON.stringify({ type: "email.received", data: { email_id: "abc" } });
+    const secretBytes = Buffer.from(secret.slice("whsec_".length), "base64");
+    const signature = crypto
+      .createHmac("sha256", secretBytes)
+      .update(`${id}.${timestamp}.${body}`)
+      .digest("base64");
+    const input = {
+      payload: body,
+      id,
+      timestamp,
+      signature: `v1,${signature}`,
+      secret,
+      now: Number(timestamp),
+    };
 
-    const expected = crypto.createHmac("sha256", secret).update(body).digest("base64");
-    expect(signature).toBe(expected);
-    expect(() => crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))).not.toThrow();
+    expect(verifyResendWebhook(input)).toBe(true);
+    expect(verifyResendWebhook({ ...input, payload: `${body} ` })).toBe(false);
+    expect(verifyResendWebhook({ ...input, now: Number(timestamp) + 301 })).toBe(false);
   });
 });

@@ -57,6 +57,7 @@ export async function resolveThreadForIncomingMessage(input: {
 
 export async function handleIncomingMessage(payload: {
   to: string[];
+  cc?: string[];
   from: string;
   subject: string;
   text?: string;
@@ -64,6 +65,7 @@ export async function handleIncomingMessage(payload: {
   headers?: Record<string, string | undefined>;
   attachments?: Array<{ filename?: string; contentType?: string; sizeBytes?: number; path?: string }>;
 }) {
+  const ccAddresses = payload.cc ?? [];
   const targetEmail = payload.to?.[0]?.toLowerCase();
   if (!targetEmail) {
     throw new Error("NO_TARGET_RECIPIENT");
@@ -79,7 +81,7 @@ export async function handleIncomingMessage(payload: {
     subject: payload.subject ?? "(no subject)",
     fromAddress: payload.from,
     toAddresses: payload.to,
-    ccAddresses: [],
+    ccAddresses,
     references: payload.headers?.References,
     inReplyTo: payload.headers?.["In-Reply-To"],
     messageIdHeader: payload.headers?.["Message-ID"],
@@ -93,10 +95,10 @@ export async function handleIncomingMessage(payload: {
       direction: "INBOUND",
       fromAddress: payload.from,
       toAddresses: payload.to,
-      ccAddresses: [],
+      ccAddresses,
       subject: payload.subject ?? "(no subject)",
-      bodyHtml: payload.html ?? payload.text ?? "",
-      bodyText: payload.text ?? payload.html ?? "",
+      bodyHtml: payload.html || payload.text || "",
+      bodyText: payload.text || payload.html || "",
       messageIdHeader: payload.headers?.["Message-ID"],
       inReplyTo: payload.headers?.["In-Reply-To"],
       references: payload.headers?.References,
@@ -116,7 +118,7 @@ export async function handleIncomingMessage(payload: {
 
   await db.thread.update({
     where: { id: thread.id },
-    data: { lastMessageAt: createdMessage.receivedAt, participantEmails: Array.from(new Set([...thread.participantEmails, payload.from, ...payload.to])) },
+    data: { lastMessageAt: createdMessage.receivedAt, participantEmails: Array.from(new Set([...thread.participantEmails, payload.from, ...payload.to, ...ccAddresses])) },
   });
 
   const rules = await db.rule.findMany({
@@ -128,7 +130,7 @@ export async function handleIncomingMessage(payload: {
     {
       fromAddress: payload.from,
       toAddresses: payload.to,
-      ccAddresses: [],
+      ccAddresses,
       subject: payload.subject ?? "(no subject)",
       bodyText: payload.text ?? "",
       bodyHtml: payload.html ?? "",
