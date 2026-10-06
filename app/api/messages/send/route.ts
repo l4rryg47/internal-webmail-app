@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { jsonError } from "@/lib/api";
 import { sendWithResend } from "@/lib/resend";
+import { plainTextToHtml } from "@/lib/email-content";
 
 const sendMessageSchema = z.object({
   to: z.union([
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
 
     const { to, cc, bcc, subject, html, text } = parsed.data;
     const fromAddress = user.email;
+    const bodyHtml = `${user.signatureHtml ?? ""}\n${html || plainTextToHtml(text)}`;
+    const bodyText = `${user.signatureHtml ? user.signatureHtml.replace(/<[^>]+>/g, "") : ""}\n${text}`;
 
     const response = await sendWithResend({
       from: fromAddress,
@@ -49,8 +52,8 @@ export async function POST(request: Request) {
       cc,
       bcc,
       subject,
-      html: `${user.signatureHtml ?? ""}\n${html}`,
-      text: `${user.signatureHtml ? user.signatureHtml.replace(/<[^>]+>/g, "") : ""}\n${text}`,
+      html: bodyHtml,
+      text: bodyText,
     });
 
     const thread = await db.thread.create({
@@ -72,8 +75,8 @@ export async function POST(request: Request) {
         toAddresses: to,
         ccAddresses: cc,
         subject,
-        bodyHtml: `${user.signatureHtml ?? ""}\n${html}`,
-        bodyText: `${user.signatureHtml ? user.signatureHtml.replace(/<[^>]+>/g, "") : ""}\n${text}`,
+        bodyHtml,
+        bodyText,
         resendId: response.id,
         isRead: true,
       },

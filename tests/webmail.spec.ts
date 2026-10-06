@@ -3,7 +3,16 @@ import { describe, expect, it } from "vitest";
 import argon2 from "argon2";
 import { clearFailedAttempts, isLocked, recordFailedAttempt } from "@/lib/auth";
 import { ensureMailboxAccess } from "@/lib/authorization";
+import { plainTextToHtml } from "@/lib/email-content";
 import { evaluateRules } from "@/lib/rules";
+
+describe("email content", () => {
+  it("renders plain-text bodies as escaped HTML while preserving line breaks", () => {
+    expect(plainTextToHtml("Hello <team>\nUse A & B")).toBe(
+      "Hello &lt;team&gt;<br />Use A &amp; B",
+    );
+  });
+});
 
 describe("authentication", () => {
   it("rejects invalid credentials and locks users after repeated failures", async () => {
