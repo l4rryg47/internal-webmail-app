@@ -21,7 +21,7 @@ export default async function AdminPage() {
       <header className="site-header">
         <div className="brand">Admin panel</div>
         <nav>
-          <Link href="/" className="button secondary">Home</Link>
+          <Link href="/mail" className="button secondary">Mailbox</Link>
         </nav>
       </header>
 

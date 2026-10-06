@@ -12,6 +12,7 @@ export default async function SettingsPage() {
         <div className="brand">Settings</div>
         <nav>
           <Link href="/mail" className="button secondary">Mailbox</Link>
+          {user.role === "ADMIN" && <Link href="/admin" className="button secondary">Admin</Link>}
           <Link href="/rules" className="button secondary">Rules</Link>
         </nav>
       </header>

@@ -23,6 +23,7 @@ export default async function MailPage() {
         <nav>
           <Link href="/compose" className="button">Compose</Link>
           <Link href="/settings" className="button secondary">Settings</Link>
+          {user.role === "ADMIN" && <Link href="/admin" className="button secondary">Admin</Link>}
           <Link href="/rules" className="button secondary">Rules</Link>
         </nav>
       </header>
