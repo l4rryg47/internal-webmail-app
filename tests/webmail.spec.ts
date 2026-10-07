@@ -6,6 +6,7 @@ import { ensureMailboxAccess } from "@/lib/authorization";
 import { formatFromHeader } from "@/lib/email-address";
 import { plainTextToHtml } from "@/lib/email-content";
 import { getRecipientCandidates } from "@/lib/inbound";
+import { getNextMailPulseAt, MAIL_PULSE_INTERVAL_MS } from "@/lib/mail-pulse";
 import { verifyResendWebhook } from "@/lib/resend-webhook";
 import { evaluateRules } from "@/lib/rules";
 
@@ -30,6 +31,14 @@ describe("sender display name", () => {
 
   it("falls back to the mailbox address when the display name is blank", () => {
     expect(formatFromHeader(" \r\n ", "sales@example.com")).toBe("sales@example.com");
+  });
+});
+
+describe("mail pulse schedule", () => {
+  it("sets the recurring interval to exactly six days", () => {
+    const start = new Date("2026-10-07T08:00:00.000Z");
+    expect(getNextMailPulseAt(start).getTime() - start.getTime()).toBe(MAIL_PULSE_INTERVAL_MS);
+    expect(MAIL_PULSE_INTERVAL_MS).toBe(6 * 24 * 60 * 60 * 1000);
   });
 });
 

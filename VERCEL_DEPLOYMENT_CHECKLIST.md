@@ -61,6 +61,9 @@ In Vercel Project → Settings → Environment Variables, add:
 - [ ] `SESSION_SECRET`
 - [ ] `RESEND_API_KEY`
 - [ ] `RESEND_WEBHOOK_SECRET`
+- [ ] `CRON_SECRET`
+- [ ] `MAIL_PULSE_FROM_EMAIL`
+- [ ] `MAIL_PULSE_FROM_NAME`
 - [ ] `NEXT_PUBLIC_APP_URL`
 - [ ] `STORAGE_PATH`
 - [ ] `LOG_LEVEL`
@@ -74,6 +77,9 @@ Recommended values:
 SESSION_SECRET="replace-with-strong-secret"
 RESEND_API_KEY="re_123"
 RESEND_WEBHOOK_SECRET="replace-with-webhook-secret"
+CRON_SECRET="replace-with-a-long-random-secret"
+MAIL_PULSE_FROM_EMAIL="admin@llctuar.com"
+MAIL_PULSE_FROM_NAME="Webmail Mail Pulse"
 STORAGE_PATH="./storage"
 NEXT_PUBLIC_APP_URL="https://your-app.vercel.app"
 LOG_LEVEL="info"
@@ -118,6 +124,8 @@ If the build fails, check:
 - [ ] Confirm the Resend webhook URL is configured correctly
 
 To receive inbound mail, configure a receiving domain in Resend and its required MX record, then add a webhook targeting `https://your-app.vercel.app/api/webhooks/resend` with the `email.received` event enabled. Set `RESEND_WEBHOOK_SECRET` to that webhook's signing secret. Resend sends message metadata to the webhook; the app uses `RESEND_API_KEY` to retrieve the full email before saving it, and routes it using the `received_for` and `to` recipient addresses.
+
+The Mail Pulse cron runs daily at 09:00 UTC and checks the persisted six-day schedule. Add a long random `CRON_SECRET` to Vercel so the scheduled endpoint is protected. Set `MAIL_PULSE_FROM_EMAIL` to an address on a domain verified for sending in Resend; the countdown is visible on the Admin page. Vercel Hobby cron jobs run once daily with up to about 59 minutes of timing variance, so a due heartbeat may wait until the next daily check. Apply the Prisma schema update separately with `npm run db:push` before deploying this feature.
 
 ## 7. Production hardening
 

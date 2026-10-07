@@ -47,6 +47,7 @@ export async function sendWithResend(input: {
   subject: string;
   html: string;
   text: string;
+  idempotencyKey?: string;
   attachments?: Array<{ filename: string; contentType: string; buffer: Buffer }>;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -74,6 +75,7 @@ export async function sendWithResend(input: {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}),
     },
     body: JSON.stringify(payload),
   });

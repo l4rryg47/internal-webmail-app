@@ -2,20 +2,25 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { AdminUserActions } from "@/components/admin/AdminUserActions";
+import { MailPulseCountdown } from "@/components/admin/MailPulseCountdown";
+import { ensureMailPulseSchedule } from "@/lib/mail-pulse";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const users = await db.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      email: true,
-      displayName: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-    },
-  });
+  const [users, mailPulse] = await Promise.all([
+    db.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+    }),
+    ensureMailPulseSchedule(),
+  ]);
 
   return (
     <main className="container workspace-page">
@@ -25,6 +30,11 @@ export default async function AdminPage() {
           <Link href="/mail" className="button secondary">Mailbox</Link>
         </nav>
       </header>
+
+      <MailPulseCountdown
+        nextSendAt={mailPulse.nextSendAt.toISOString()}
+        lastSentAt={mailPulse.lastSentAt?.toISOString() ?? null}
+      />
 
       <section className="panel">
         <h2>Create user</h2>

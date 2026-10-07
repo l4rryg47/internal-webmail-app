@@ -51,6 +51,15 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+model MailPulse {
+  id           String   @id
+  nextSendAt   DateTime
+  lastSentAt   DateTime?
+  lastResendId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Thread {
   id                String    @id @default(uuid())
   userId            String
