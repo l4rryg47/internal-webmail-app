@@ -5,19 +5,12 @@ import { AppShell } from "@/components/mailbox/AppShell";
 export default async function MailPage() {
   const user = await requireUser();
 
-  // Fetch folder counts
-  const [inboxCount, sentCount, draftsCount, trashCount] = await Promise.all([
-    db.message.count({ where: { userId: user.id, folder: "INBOX" } }),
-    db.message.count({ where: { userId: user.id, folder: "SENT" } }),
-    db.message.count({ where: { userId: user.id, folder: "DRAFTS" } }),
-    db.message.count({ where: { userId: user.id, folder: "TRASH" } }),
-  ]);
+  const inboxUnreadCount = await db.message.count({
+    where: { userId: user.id, folder: "INBOX", isRead: false },
+  });
 
   const folderCounts = {
-    INBOX: inboxCount,
-    SENT: sentCount,
-    DRAFTS: draftsCount,
-    TRASH: trashCount,
+    INBOX: inboxUnreadCount,
   };
 
   return (

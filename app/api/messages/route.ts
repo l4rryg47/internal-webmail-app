@@ -12,6 +12,7 @@ export async function GET(request: Request) {
       where: { userId: user.id, folder: folder as any },
       orderBy: { receivedAt: "desc" },
       take: 25,
+      include: { attachments: true },
     });
 
     return NextResponse.json(messages);

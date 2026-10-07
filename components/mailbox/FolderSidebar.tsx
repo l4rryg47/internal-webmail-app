@@ -8,10 +8,10 @@ interface FolderSidebarProps {
 }
 
 const folders = [
-  { id: "INBOX", name: "Inbox", icon: "📥" },
-  { id: "SENT", name: "Sent", icon: "📤" },
-  { id: "DRAFTS", name: "Drafts", icon: "📝" },
-  { id: "TRASH", name: "Trash", icon: "🗑️" },
+  { id: "INBOX", name: "Inbox", icon: "M4 5h16v14H4z M4 6l8 7 8-7" },
+  { id: "SENT", name: "Sent", icon: "M22 2 11 13 M22 2l-7 20-4-9-9-4z" },
+  { id: "DRAFTS", name: "Drafts", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h8" },
+  { id: "TRASH", name: "Trash", icon: "M3 6h18 M8 6V4h8v2 M19 6l-1 14H6L5 6 M10 11v5 M14 11v5" },
 ];
 
 export function FolderSidebar({ selectedFolder, onFolderSelect, onCompose, folderCounts }: FolderSidebarProps) {
@@ -29,28 +29,31 @@ export function FolderSidebar({ selectedFolder, onFolderSelect, onCompose, folde
         {folders.map((folder) => {
           const count = folderCounts?.[folder.id] || 0;
           return (
-            <div
+            <button
               key={folder.id}
               className={`folder-item ${selectedFolder === folder.id ? "active" : ""}`}
               onClick={() => onFolderSelect(folder.id)}
+              aria-current={selectedFolder === folder.id ? "page" : undefined}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>{folder.icon}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d={folder.icon} />
+                </svg>
                 <span>{folder.name}</span>
               </div>
-              {count > 0 && (
+              {folder.id === "INBOX" && count > 0 && (
                 <span className="folder-badge">{count}</span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
 
       <div className="folder-divider" />
 
-      <a href="/rules" className="folder-item" style={{ textDecoration: "none" }}>
+      <a href="/rules" className="folder-item">
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span>⚙️</span>
+          <span aria-hidden="true">⚙</span>
           <span>Rules</span>
         </div>
       </a>

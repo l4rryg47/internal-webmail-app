@@ -10,11 +10,8 @@ interface AppRailProps {
 export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRailProps) {
   const getInitials = (email?: string) => {
     if (!email) return "?";
-    const parts = email.split("@")[0].split(".");
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return email.slice(0, 2).toUpperCase();
+    const name = email.split("@")[0];
+    return name.slice(0, 2).toUpperCase();
   };
 
   const handleLogout = async () => {
@@ -27,74 +24,42 @@ export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRail
       }
     } catch (error) {
       console.error("Logout failed:", error);
-      // Still redirect even if API call fails
       window.location.replace("/login");
     }
   };
 
   return (
-    <div className="app-rail">
-      <div
-        className={`app-rail-item ${activeNav === "mail" ? "active" : ""}`}
-        onClick={() => onNavChange("mail")}
-        title="Mail"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-          <polyline points="22,6 12,13 2,6" />
-        </svg>
-      </div>
-
-      <div
-        className={`app-rail-item ${activeNav === "rules" ? "active" : ""}`}
-        onClick={() => onNavChange("rules")}
-        title="Rules"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14,2 14,8 20,8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10,9 9,9 8,9" />
-        </svg>
-      </div>
-
-      {userRole === "ADMIN" && (
-        <div
-          className={`app-rail-item ${activeNav === "admin" ? "active" : ""}`}
-          onClick={() => onNavChange("admin")}
-          title="Admin"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
+    <header className="app-rail">
+      <a className="mailbox-brand" href="/mail" aria-label="Internal Mail home">
+        <span className="mailbox-brand-mark" aria-hidden="true">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3 7 9 6 9-6" />
           </svg>
-        </div>
-      )}
+        </span>
+        <span>Internal Mail</span>
+      </a>
 
-      <div className="app-rail-spacer" />
+      <nav className="top-nav" aria-label="Main navigation">
+        <button className={`top-nav-item ${activeNav === "mail" ? "active" : ""}`} onClick={() => onNavChange("mail")}>
+          Mail
+        </button>
+        <button className={`top-nav-item ${activeNav === "rules" ? "active" : ""}`} onClick={() => onNavChange("rules")}>
+          Rules
+        </button>
+        {userRole === "ADMIN" && (
+          <button className={`top-nav-item ${activeNav === "admin" ? "active" : ""}`} onClick={() => onNavChange("admin")}>
+            Admin
+          </button>
+        )}
+      </nav>
 
-      <div
-        className="app-rail-item"
-        title={userEmail || "User"}
-      >
-        <div style={{ fontSize: "12px", fontWeight: "500" }}>
-          {getInitials(userEmail)}
-        </div>
-      </div>
-
-      <div
-        className="app-rail-item"
-        onClick={handleLogout}
-        title="Logout"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <polyline points="16 17 21 12 16 7" />
-          <line x1="21" y1="12" x2="9" y2="12" />
-        </svg>
-      </div>
-    </div>
+      <div className="top-nav-spacer" />
+      <span className="account-email">{userEmail}</span>
+      <button className="account-avatar" title={userEmail || "Account"} aria-label={`Signed in as ${userEmail || "user"}`}>
+        {getInitials(userEmail)}
+      </button>
+      <button className="logout-button" onClick={handleLogout}>Sign out</button>
+    </header>
   );
 }

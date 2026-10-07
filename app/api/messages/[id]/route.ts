@@ -22,3 +22,23 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     return jsonError("UNAUTHENTICATED", "Authentication required.", 401);
   }
 }
+
+export async function PATCH(_request: Request, { params }: { params: { id: string } }) {
+  try {
+    const user = await requireUser();
+    const message = await db.message.findUnique({ where: { id: params.id } });
+
+    if (!message) {
+      return jsonError("MESSAGE_NOT_FOUND", "Message not found.", 404);
+    }
+
+    ensureMailboxAccess(user.id, message.userId);
+    const updatedMessage = await db.message.update({
+      where: { id: message.id },
+      data: { isRead: true },
+    });
+    return NextResponse.json(updatedMessage);
+  } catch (error) {
+    return jsonError("UNAUTHENTICATED", "Authentication required.", 401);
+  }
+}

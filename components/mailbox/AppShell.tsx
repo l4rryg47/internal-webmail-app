@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppRail } from "./AppRail";
 import { FolderSidebar } from "./FolderSidebar";
 import { ThreadList } from "./ThreadList";
@@ -14,12 +15,19 @@ interface AppShellProps {
 }
 
 export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShellProps) {
+  const router = useRouter();
   const [selectedFolder, setSelectedFolder] = useState<string>("INBOX");
+  const [inboxUnreadCount, setInboxUnreadCount] = useState(folderCounts?.INBOX ?? 0);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isComposeMinimized, setIsComposeMinimized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const [activeNav, setActiveNav] = useState<"mail" | "rules" | "admin">("mail");
+
+  useEffect(() => {
+    setInboxUnreadCount(folderCounts?.INBOX ?? 0);
+  }, [folderCounts?.INBOX]);
 
   // Handle navigation
   useEffect(() => {
@@ -42,7 +50,7 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
         selectedFolder={selectedFolder}
         onFolderSelect={setSelectedFolder}
         onCompose={() => setIsComposeOpen(true)}
-        folderCounts={folderCounts}
+        folderCounts={{ INBOX: inboxUnreadCount }}
       />
       <ThreadList
         folder={selectedFolder}
@@ -50,6 +58,12 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
         onThreadSelect={setSelectedThreadId}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        refreshKey={refreshKey}
+        onRefresh={() => {
+          setRefreshKey((key) => key + 1);
+          router.refresh();
+        }}
+        onMessageRead={() => setInboxUnreadCount((count) => Math.max(0, count - 1))}
       />
       <ReadingPane
         threadId={selectedThreadId}

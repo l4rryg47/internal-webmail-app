@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SearchBar } from "./SearchBar";
 import { ThreadListItem } from "./ThreadListItem";
 
@@ -10,6 +10,9 @@ interface ThreadListProps {
   onThreadSelect: (threadId: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  refreshKey: number;
+  onRefresh: () => void;
+  onMessageRead: () => void;
 }
 
 interface Message {
@@ -23,6 +26,8 @@ interface Message {
   toAddresses: string[];
   ccAddresses: string[];
   attachments: any[];
+  isRead: boolean;
+  isFlagged: boolean;
 }
 
 export function ThreadList({
@@ -31,10 +36,15 @@ export function ThreadList({
   onThreadSelect,
   searchQuery,
   onSearchChange,
+  refreshKey,
+  onRefresh,
+  onMessageRead,
 }: ThreadListProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const markingRead = useRef(new Set<string>());
 
   useEffect(() => {
     async function fetchMessages() {
@@ -53,7 +63,7 @@ export function ThreadList({
     }
 
     fetchMessages();
-  }, [folder]);
+  }, [folder, refreshKey]);
 
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
@@ -79,13 +89,58 @@ export function ThreadList({
     return text.slice(0, 120) + (text.length > 120 ? "..." : "");
   };
 
-  const filteredMessages = searchQuery
-    ? messages.filter(
-        (msg) =>
-          msg.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          msg.fromAddress.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : messages;
+  const filteredMessages = messages
+    .filter((message) => !unreadOnly || !message.isRead)
+    .filter((message) =>
+      !searchQuery ||
+      message.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.fromAddress.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+  const listToolbar = (
+    <div className="message-list-toolbar">
+      <div className="message-list-title">
+        {folder === "INBOX" ? "Inbox" : folder[0] + folder.slice(1).toLowerCase()}
+      </div>
+      <span className="message-count">{filteredMessages.length} shown</span>
+      <button
+        className="toolbar-button"
+        onClick={() => setUnreadOnly((value) => !value)}
+        aria-pressed={unreadOnly}
+      >
+        Unread
+      </button>
+      <button className="toolbar-button icon-only" onClick={onRefresh} aria-label="Refresh messages" title="Refresh">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 7v5h-5M4 17v-5h5" />
+          <path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2" />
+        </svg>
+      </button>
+    </div>
+  );
+
+  const handleMessageSelect = async (message: Message, index: number) => {
+    onThreadSelect(message.id);
+    setSelectedIndex(index);
+    if (folder !== "INBOX" || message.isRead || markingRead.current.has(message.id)) return;
+
+    markingRead.current.add(message.id);
+    try {
+      const response = await fetch(`/api/messages/${message.id}`, { method: "PATCH" });
+      if (!response.ok) {
+        console.error("Failed to mark message as read:", response.statusText);
+        return;
+      }
+      setMessages((current) => current.map((item) => (
+        item.id === message.id ? { ...item, isRead: true } : item
+      )));
+      onMessageRead();
+    } catch (error) {
+      console.error("Failed to mark message as read:", error);
+    } finally {
+      markingRead.current.delete(message.id);
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -95,7 +150,7 @@ export function ThreadList({
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === "Enter" && selectedIndex >= 0) {
-      onThreadSelect(filteredMessages[selectedIndex].id);
+      void handleMessageSelect(filteredMessages[selectedIndex], selectedIndex);
     } else if (e.key === "Home") {
       e.preventDefault();
       setSelectedIndex(0);
@@ -109,6 +164,7 @@ export function ThreadList({
     return (
       <div className="thread-list">
         <SearchBar searchQuery={searchQuery} onSearchChange={onSearchChange} />
+        {listToolbar}
         <div className="thread-list-content">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} style={{ padding: "12px", borderBottom: "1px solid var(--border-subtle)" }}>
@@ -125,6 +181,7 @@ export function ThreadList({
   return (
     <div className="thread-list" onKeyDown={handleKeyDown} tabIndex={0}>
       <SearchBar searchQuery={searchQuery} onSearchChange={onSearchChange} />
+      {listToolbar}
       <div className="thread-list-content">
         {filteredMessages.length === 0 ? (
           <div className="empty-state">
@@ -142,17 +199,18 @@ export function ThreadList({
                 id: message.id,
                 subject: message.subject || "(no subject)",
                 sender: getSenderName(message.fromAddress),
+                senderInitial: getSenderName(message.fromAddress).slice(0, 1).toUpperCase(),
+                senderColor: `hsl(${getSenderName(message.fromAddress).charCodeAt(0) * 13 % 360} 42% 38%)`,
                 snippet: getSnippet(message.bodyText, message.bodyHtml),
                 timestamp: formatTimestamp(message.receivedAt),
-                isUnread: false, // TODO: Add unread status from data
-                isFlagged: false, // TODO: Add flag status from data
+                isUnread: !message.isRead,
+                isFlagged: message.isFlagged,
                 hasAttachment: message.attachments ? message.attachments.length > 0 : false,
               }}
               isSelected={selectedThreadId === message.id}
               isFocused={selectedIndex === index}
               onClick={() => {
-                onThreadSelect(message.id);
-                setSelectedIndex(index);
+                void handleMessageSelect(message, index);
               }}
             />
           ))
