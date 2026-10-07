@@ -28,6 +28,7 @@ export default function HomePage() {
 
           <button type="submit">Sign in</button>
         </form>
+        <footer className="login-footer">Powered by Alchemy Intell 2.0</footer>
       </div>
     </main>
   );
