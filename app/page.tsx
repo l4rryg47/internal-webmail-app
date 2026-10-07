@@ -1,7 +1,7 @@
 export default function HomePage() {
   return (
-    <main className="container centered">
-      <div className="card auth-box">
+    <main className="container centered login-page">
+      <div className="card auth-box login-card">
         <h1>Company Mail</h1>
         <p className="muted">Use your work email and password to continue.</p>
 
