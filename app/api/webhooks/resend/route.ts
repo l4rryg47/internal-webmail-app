@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     const emailPayload = await getReceivedEmail(emailId);
     const messagePayload = {
       to: emailPayload.to,
+      receivedFor: emailPayload.received_for,
       cc: emailPayload.cc,
       from: emailPayload.from,
       subject: emailPayload.subject,

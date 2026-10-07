@@ -117,7 +117,7 @@ If the build fails, check:
 - [ ] Verify send/inbound routes work in the hosted environment
 - [ ] Confirm the Resend webhook URL is configured correctly
 
-To receive inbound mail, configure a receiving domain in Resend and its required MX record, then add a webhook targeting `https://your-app.vercel.app/api/webhooks/resend` with the `email.received` event enabled. Set `RESEND_WEBHOOK_SECRET` to that webhook's signing secret. Resend sends message metadata to the webhook; the app uses `RESEND_API_KEY` to retrieve the full email before saving it.
+To receive inbound mail, configure a receiving domain in Resend and its required MX record, then add a webhook targeting `https://your-app.vercel.app/api/webhooks/resend` with the `email.received` event enabled. Set `RESEND_WEBHOOK_SECRET` to that webhook's signing secret. Resend sends message metadata to the webhook; the app uses `RESEND_API_KEY` to retrieve the full email before saving it, and routes it using the `received_for` and `to` recipient addresses.
 
 ## 7. Production hardening
 

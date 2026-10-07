@@ -3,6 +3,7 @@ import { z } from "zod";
 const receivedEmailSchema = z.object({
   id: z.string(),
   to: z.array(z.string()),
+  received_for: z.array(z.string()).nullable().optional().transform((value) => value ?? []),
   cc: z.array(z.string()).nullable().optional().transform((value) => value ?? []),
   from: z.string(),
   subject: z.string().nullable().optional().transform((value) => value ?? "(no subject)"),

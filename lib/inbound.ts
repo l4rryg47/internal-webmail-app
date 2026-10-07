@@ -1,6 +1,12 @@
 import { db } from "@/lib/db";
 import { evaluateRules } from "@/lib/rules";
 
+export function getRecipientCandidates(to: string[], receivedFor: string[] = []) {
+  return Array.from(new Set([...receivedFor, ...to]
+    .map((address) => address.trim().toLowerCase())
+    .filter(Boolean)));
+}
+
 export async function resolveThreadForIncomingMessage(input: {
   userId: string;
   subject: string;
@@ -57,6 +63,7 @@ export async function resolveThreadForIncomingMessage(input: {
 
 export async function handleIncomingMessage(payload: {
   to: string[];
+  receivedFor?: string[];
   cc?: string[];
   from: string;
   subject: string;
@@ -66,12 +73,16 @@ export async function handleIncomingMessage(payload: {
   attachments?: Array<{ filename?: string; contentType?: string; sizeBytes?: number; path?: string }>;
 }) {
   const ccAddresses = payload.cc ?? [];
-  const targetEmail = payload.to?.[0]?.toLowerCase();
-  if (!targetEmail) {
+  const recipientCandidates = getRecipientCandidates(payload.to ?? [], payload.receivedFor);
+  if (recipientCandidates.length === 0) {
     throw new Error("NO_TARGET_RECIPIENT");
   }
 
-  const user = await db.user.findUnique({ where: { email: targetEmail } });
+  const matchingUsers = await db.user.findMany({
+    where: { email: { in: recipientCandidates } },
+  });
+  const usersByEmail = new Map(matchingUsers.map((user) => [user.email.toLowerCase(), user]));
+  const user = recipientCandidates.map((email) => usersByEmail.get(email)).find(Boolean);
   if (!user) {
     throw new Error("USER_NOT_FOUND");
   }

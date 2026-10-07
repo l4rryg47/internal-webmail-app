@@ -4,6 +4,7 @@ import argon2 from "argon2";
 import { clearFailedAttempts, isLocked, recordFailedAttempt } from "@/lib/auth";
 import { ensureMailboxAccess } from "@/lib/authorization";
 import { plainTextToHtml } from "@/lib/email-content";
+import { getRecipientCandidates } from "@/lib/inbound";
 import { verifyResendWebhook } from "@/lib/resend-webhook";
 import { evaluateRules } from "@/lib/rules";
 
@@ -38,6 +39,15 @@ describe("mailbox isolation", () => {
   it("prevents cross-user mailbox access even with a guessed message id", () => {
     expect(() => ensureMailboxAccess("user-a", "user-b")).toThrow("MAILBOX_ISOLATION_VIOLATION");
     expect(ensureMailboxAccess("user-a", "user-a")).toBe(true);
+  });
+});
+
+describe("inbound recipient resolution", () => {
+  it("prioritizes Resend's routed recipient and checks every To address", () => {
+    expect(getRecipientCandidates(
+      ["other@example.com", " SALES@LLCTUAR.COM "],
+      ["Sales@llctuar.com"],
+    )).toEqual(["sales@llctuar.com", "other@example.com"]);
   });
 });
 
