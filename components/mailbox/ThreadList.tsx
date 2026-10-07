@@ -13,6 +13,7 @@ interface ThreadListProps {
   refreshKey: number;
   onRefresh: () => void;
   onMessageRead: () => void;
+  onFoldersToggle: () => void;
 }
 
 interface Message {
@@ -39,6 +40,7 @@ export function ThreadList({
   refreshKey,
   onRefresh,
   onMessageRead,
+  onFoldersToggle,
 }: ThreadListProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +105,14 @@ export function ThreadList({
         {folder === "INBOX" ? "Inbox" : folder[0] + folder.slice(1).toLowerCase()}
       </div>
       <span className="message-count">{filteredMessages.length} shown</span>
+      <button
+        className="toolbar-button mobile-folder-toggle"
+        onClick={onFoldersToggle}
+        aria-label="Open folders"
+        title="Open folders"
+      >
+        Folders
+      </button>
       <button
         className="toolbar-button"
         onClick={() => setUnreadOnly((value) => !value)}

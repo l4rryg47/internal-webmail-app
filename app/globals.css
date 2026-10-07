@@ -1157,6 +1157,11 @@ textarea:focus-visible,
   opacity: .45;
 }
 
+.mobile-folder-backdrop,
+.mobile-folder-toggle {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .mailbox-shell {
     grid-template-columns: 200px minmax(0, 1fr);
@@ -1169,20 +1174,104 @@ textarea:focus-visible,
 }
 
 @media (max-width: 600px) {
-  .mailbox-shell { grid-template-columns: minmax(130px, 38%) minmax(0, 1fr); grid-template-rows: 58px minmax(0, 1fr); }
-  .mailbox-shell .app-rail { padding: 0 12px; }
-  .mailbox-brand { min-width: auto; font-size: 0; }
+  .mailbox-shell {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 58px minmax(0, 1fr);
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .mailbox-shell .app-rail {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    padding: 0 10px;
+  }
+  .mailbox-brand { min-width: 34px; font-size: 0; }
   .mailbox-brand-mark { flex: 0 0 34px; }
-  .top-nav { gap: 0; }
-  .mailbox-shell .top-nav-item { padding: 0 10px; font-size: 12px; }
+  .top-nav { min-width: 0; gap: 0; }
+  .mailbox-shell .top-nav-item { padding: 0 8px; font-size: 12px; }
   .account-email { display: none; }
-  .mailbox-shell .account-avatar { margin-left: auto; }
-  .mailbox-shell .logout-button { padding: 8px; font-size: 11px; }
-  .mailbox-shell .folder-sidebar { grid-column: 1; grid-row: 2; padding: 12px 7px; }
-  .mailbox-shell .thread-list { grid-column: 2; grid-row: 2; }
-  .mailbox-shell .reading-pane { grid-column: 2; grid-row: 2; }
-  .mailbox-shell .reading-pane.active { z-index: 100; }
+  .mailbox-shell .account-avatar { flex: 0 0 32px; margin: 0 6px 0 auto; }
+  .mailbox-shell .logout-button { padding: 7px; font-size: 11px; white-space: nowrap; }
+  .mailbox-shell .folder-sidebar {
+    position: fixed;
+    z-index: 81;
+    top: 58px;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, 300px);
+    padding: 16px 12px;
+    border-right: 1px solid var(--border-subtle);
+    box-shadow: 12px 0 28px rgba(0, 0, 0, .28);
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+  }
+  .mailbox-shell .folder-sidebar.drawer-open { transform: translateX(0); }
+  .mobile-folder-backdrop {
+    position: fixed;
+    z-index: 80;
+    inset: 58px 0 0;
+    display: block;
+    width: 100%;
+    height: calc(100% - 58px);
+    border: 0;
+    background: rgba(0, 0, 0, .58);
+  }
+  .mailbox-shell .thread-list {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    border-right: 0;
+  }
+  .mailbox-shell .reading-pane {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+  }
+  .mailbox-shell .reading-pane.active {
+    position: fixed;
+    z-index: 100;
+    inset: 58px 0 0;
+    display: flex;
+    overflow: hidden;
+  }
+  .mailbox-shell .reading-pane-content { padding: 18px 16px; }
+  .mailbox-shell .message-meta { flex-wrap: wrap; gap: 10px; }
+  .mailbox-shell .message-subject { overflow-wrap: anywhere; font-size: 19px; }
+  .mailbox-shell .message-body { max-width: 100%; overflow-wrap: anywhere; }
+  .mailbox-shell .message-body img,
+  .mailbox-shell .message-body table { max-width: 100%; }
+  .mailbox-shell .message-body table { display: block; overflow-x: auto; }
+  .mailbox-shell .action-bar { flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+  .mailbox-shell .action-button { padding: 8px 10px; }
+  .mailbox-shell .mobile-folder-toggle { display: inline-flex; }
+  .message-list-toolbar { padding: 7px 9px; }
+  .message-list-title { font-size: 14px; }
   .message-count { display: none; }
+  .mailbox-shell .thread-item { padding: 13px 10px; }
+  .mailbox-shell .compose-panel {
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border: 0;
+  }
+  .mailbox-shell .compose-panel.minimized {
+    inset: auto 0 0;
+    height: 48px;
+  }
+  .mailbox-shell .compose-content { min-height: 0; padding: 12px; }
+  .mailbox-shell .compose-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface-raised);
+  }
+  .mailbox-shell .ql-toolbar { overflow-x: auto; white-space: nowrap; }
+  .mailbox-shell .ql-container { min-width: 0; }
   .workspace-page { padding: 18px 14px; }
   .workspace-page .site-header { align-items: flex-start; gap: 12px; }
   .workspace-page .site-header .brand { font-size: 20px; }

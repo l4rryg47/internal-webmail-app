@@ -5,6 +5,7 @@ interface FolderSidebarProps {
   onFolderSelect: (folder: string) => void;
   onCompose: () => void;
   folderCounts?: Record<string, number>;
+  isDrawerOpen?: boolean;
 }
 
 const folders = [
@@ -14,9 +15,9 @@ const folders = [
   { id: "TRASH", name: "Trash", icon: "M3 6h18 M8 6V4h8v2 M19 6l-1 14H6L5 6 M10 11v5 M14 11v5" },
 ];
 
-export function FolderSidebar({ selectedFolder, onFolderSelect, onCompose, folderCounts }: FolderSidebarProps) {
+export function FolderSidebar({ selectedFolder, onFolderSelect, onCompose, folderCounts, isDrawerOpen = false }: FolderSidebarProps) {
   return (
-    <div className="folder-sidebar">
+    <div className={`folder-sidebar ${isDrawerOpen ? "drawer-open" : ""}`}>
       <button className="compose-button" onClick={onCompose}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

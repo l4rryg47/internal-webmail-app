@@ -23,6 +23,7 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
   const [isComposeMinimized, setIsComposeMinimized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isFolderDrawerOpen, setIsFolderDrawerOpen] = useState(false);
   const [activeNav, setActiveNav] = useState<"mail" | "rules" | "admin">("mail");
 
   useEffect(() => {
@@ -40,6 +41,13 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
 
   return (
     <div className="mailbox-shell">
+      {isFolderDrawerOpen && (
+        <button
+          className="mobile-folder-backdrop"
+          aria-label="Close folders"
+          onClick={() => setIsFolderDrawerOpen(false)}
+        />
+      )}
       <AppRail
         activeNav={activeNav}
         onNavChange={setActiveNav}
@@ -48,9 +56,13 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
       />
       <FolderSidebar
         selectedFolder={selectedFolder}
-        onFolderSelect={setSelectedFolder}
+        onFolderSelect={(folder) => {
+          setSelectedFolder(folder);
+          setIsFolderDrawerOpen(false);
+        }}
         onCompose={() => setIsComposeOpen(true)}
         folderCounts={{ INBOX: inboxUnreadCount }}
+        isDrawerOpen={isFolderDrawerOpen}
       />
       <ThreadList
         folder={selectedFolder}
@@ -64,10 +76,12 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
           router.refresh();
         }}
         onMessageRead={() => setInboxUnreadCount((count) => Math.max(0, count - 1))}
+        onFoldersToggle={() => setIsFolderDrawerOpen((open) => !open)}
       />
       <ReadingPane
         threadId={selectedThreadId}
         onReply={() => setIsComposeOpen(true)}
+        onBack={() => setSelectedThreadId(null)}
       />
       {isComposeOpen && (
         <ComposePanel

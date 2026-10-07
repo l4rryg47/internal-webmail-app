@@ -8,6 +8,7 @@ import { ActionBar } from "./ActionBar";
 interface ReadingPaneProps {
   threadId: string | null;
   onReply: () => void;
+  onBack: () => void;
 }
 
 interface Message {
@@ -27,7 +28,7 @@ interface Message {
   }>;
 }
 
-export function ReadingPane({ threadId, onReply }: ReadingPaneProps) {
+export function ReadingPane({ threadId, onReply, onBack }: ReadingPaneProps) {
   const [message, setMessage] = useState<Message | null>(null);
   const [loading, setLoading] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -148,7 +149,7 @@ export function ReadingPane({ threadId, onReply }: ReadingPaneProps) {
         <button
           className="action-button"
           style={{ margin: "12px 16px", width: "fit-content" }}
-          onClick={() => window.history.back()}
+          onClick={onBack}
         >
           ← Back
         </button>
