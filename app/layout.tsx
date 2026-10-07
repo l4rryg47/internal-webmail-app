@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Internal Webmail",
+  title: "Webmail 4.7",
   description: "Internal enterprise webmail app",
 };
 
