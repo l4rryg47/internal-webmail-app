@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { AdminUserActions } from "@/components/admin/AdminUserActions";
 
 export default async function AdminPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const users = await db.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
@@ -17,7 +18,7 @@ export default async function AdminPage() {
   });
 
   return (
-    <main className="container">
+    <main className="container workspace-page">
       <header className="site-header">
         <div className="brand">Admin panel</div>
         <nav>
@@ -55,7 +56,8 @@ export default async function AdminPage() {
 
       <section className="panel" style={{ marginTop: 24 }}>
         <h2>Users</h2>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="workspace-table-wrap">
+        <table className="workspace-table" style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Email</th>
@@ -63,6 +65,7 @@ export default async function AdminPage() {
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Role</th>
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Status</th>
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Created</th>
+              <th style={{ textAlign: "left", padding: "10px 8px" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -73,10 +76,18 @@ export default async function AdminPage() {
                 <td style={{ padding: "10px 8px" }}>{user.role}</td>
                 <td style={{ padding: "10px 8px" }}>{user.isActive ? "Active" : "Inactive"}</td>
                 <td style={{ padding: "10px 8px" }}>{new Date(user.createdAt).toLocaleDateString()}</td>
+                <td style={{ padding: "10px 8px" }}>
+                  <AdminUserActions
+                    userId={user.id}
+                    email={user.email}
+                    canDelete={user.id !== admin.id}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </section>
     </main>
   );

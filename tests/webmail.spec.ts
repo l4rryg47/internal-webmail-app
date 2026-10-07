@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import argon2 from "argon2";
 import { clearFailedAttempts, isLocked, recordFailedAttempt } from "@/lib/auth";
 import { ensureMailboxAccess } from "@/lib/authorization";
+import { formatFromHeader } from "@/lib/email-address";
 import { plainTextToHtml } from "@/lib/email-content";
 import { getRecipientCandidates } from "@/lib/inbound";
 import { verifyResendWebhook } from "@/lib/resend-webhook";
@@ -13,6 +14,22 @@ describe("email content", () => {
     expect(plainTextToHtml("Hello <team>\nUse A & B")).toBe(
       "Hello &lt;team&gt;<br />Use A &amp; B",
     );
+  });
+});
+
+describe("sender display name", () => {
+  it("formats the display name with the unchanged mailbox address", () => {
+    expect(formatFromHeader("Sales Team", "sales@example.com"))
+      .toBe('"Sales Team" <sales@example.com>');
+  });
+
+  it("prevents display names from injecting extra mail headers", () => {
+    expect(formatFromHeader('Sales"\r\nBcc: attacker@example.com', "sales@example.com"))
+      .toBe('"Sales\\" Bcc: attacker@example.com" <sales@example.com>');
+  });
+
+  it("falls back to the mailbox address when the display name is blank", () => {
+    expect(formatFromHeader(" \r\n ", "sales@example.com")).toBe("sales@example.com");
   });
 });
 

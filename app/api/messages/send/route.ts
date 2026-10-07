@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { jsonError } from "@/lib/api";
 import { sendWithResend } from "@/lib/resend";
 import { plainTextToHtml } from "@/lib/email-content";
+import { formatFromHeader } from "@/lib/email-address";
 
 const sendMessageSchema = z.object({
   to: z.union([
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     const bodyText = `${user.signatureHtml ? user.signatureHtml.replace(/<[^>]+>/g, "") : ""}\n${text}`;
 
     const response = await sendWithResend({
-      from: fromAddress,
+      from: formatFromHeader(user.displayName, fromAddress),
       to,
       cc,
       bcc,

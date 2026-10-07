@@ -10,7 +10,7 @@ export default async function RulesPage() {
   });
 
   return (
-    <main className="container">
+    <main className="container workspace-page">
       <header className="site-header">
         <div className="brand">Rules</div>
         <nav>
@@ -63,7 +63,7 @@ export default async function RulesPage() {
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {rules.map((rule) => (
-              <li key={rule.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
+              <li key={rule.id} className="card rule-card" style={{ padding: 16, marginBottom: 12 }}>
                 <div className="row" style={{ justifyContent: "space-between" }}>
                   <strong>{rule.name}</strong>
                   <span className="muted">Priority {rule.priority}</span>

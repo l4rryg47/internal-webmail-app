@@ -7,7 +7,7 @@ export default async function SettingsPage() {
   const profile = await db.user.findUnique({ where: { id: user.id } });
 
   return (
-    <main className="container">
+    <main className="container workspace-page">
       <header className="site-header">
         <div className="brand">Settings</div>
         <nav>
@@ -18,6 +18,7 @@ export default async function SettingsPage() {
       </header>
 
       <section className="panel">
+        <h2>Email signature</h2>
         <form action="/api/settings" method="POST" className="column">
           <label htmlFor="signature">Email signature</label>
           <textarea id="signature" name="signatureHtml" rows={6} defaultValue={profile?.signatureHtml ?? ""} />
@@ -26,6 +27,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="panel" style={{ marginTop: 24 }}>
+        <h2>Change password</h2>
         <form action="/api/auth/change-password" method="POST" className="column">
           <div>
             <label htmlFor="currentPassword">Current password</label>
