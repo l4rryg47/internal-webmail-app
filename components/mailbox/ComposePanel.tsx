@@ -25,6 +25,7 @@ export function ComposePanel({
 }: ComposePanelProps) {
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -38,6 +39,7 @@ export function ComposePanel({
     const formData = new FormData();
     formData.append("to", to);
     formData.append("cc", cc);
+    formData.append("bcc", bcc);
     formData.append("subject", subject);
     formData.append("html", html);
 
@@ -50,6 +52,7 @@ export function ComposePanel({
       // Reset form
       setTo("");
       setCc("");
+      setBcc("");
       setSubject("");
       setHtml("");
     } else {
@@ -137,6 +140,14 @@ export function ComposePanel({
               placeholder="CC"
               value={cc}
               onChange={(e) => setCc(e.target.value)}
+              disabled={isSending}
+            />
+            <input
+              type="text"
+              className="compose-input"
+              placeholder="BCC"
+              value={bcc}
+              onChange={(e) => setBcc(e.target.value)}
               disabled={isSending}
             />
             <input
