@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export function getRequiredToRecipients(to: string[], senderEmail: string) {
+  return to.length > 0 ? to : [senderEmail];
+}
+
 const receivedEmailSchema = z.object({
   id: z.string(),
   to: z.array(z.string()),
@@ -44,9 +48,11 @@ export async function sendWithResend(input: {
   to: string[];
   cc?: string[];
   bcc?: string[];
+  replyTo?: string;
   subject: string;
   html: string;
   text: string;
+  headers?: Record<string, string>;
   idempotencyKey?: string;
   attachments?: Array<{ filename: string; contentType: string; buffer: Buffer }>;
 }) {
@@ -60,9 +66,11 @@ export async function sendWithResend(input: {
     to: input.to,
     cc: input.cc ?? [],
     bcc: input.bcc ?? [],
+    ...(input.replyTo ? { reply_to: input.replyTo } : {}),
     subject: input.subject,
     html: input.html,
     text: input.text,
+    ...(input.headers ? { headers: input.headers } : {}),
     attachments: (input.attachments ?? []).map((attachment) => ({
       filename: attachment.filename,
       contentType: attachment.contentType,

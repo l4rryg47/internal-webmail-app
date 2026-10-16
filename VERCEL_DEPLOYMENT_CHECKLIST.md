@@ -8,6 +8,8 @@ Use this checklist when deploying the internal webmail app to Vercel with a Supa
 - [ ] Open the project dashboard
 - [ ] In Supabase → Connect, select the Session pooler connection string (port `5432`); use it for `DIRECT_URL`
 - [ ] Use the Transaction pooler connection string (port `6543`) for `DATABASE_URL`
+- [ ] For Prisma on Supabase's transaction pooler, add `pgbouncer=true&connection_limit=1&sslmode=require` to `DATABASE_URL` (preserve any existing query parameters)
+- [ ] Add `sslmode=require` to `DIRECT_URL`
 - [ ] Use the pooler-provided username (commonly `postgres.[PROJECT-REF]`) and URL-encode special characters in the password
 - [ ] Save both values for the Vercel environment variables
 
@@ -41,6 +43,8 @@ Apply the Prisma schema separately from a trusted local machine with the project
 ```powershell
 npm run db:push
 ```
+
+Apply this schema update before deploying code that uses new mailbox preference fields, so existing databases gain the required columns.
 
 The Supabase CLI can authenticate and link the Supabase project, but it does not apply `prisma/schema.prisma` itself. Use Prisma CLI for the schema operation. To authenticate/link the project:
 

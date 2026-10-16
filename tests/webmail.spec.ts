@@ -3,12 +3,15 @@ import { describe, expect, it } from "vitest";
 import argon2 from "argon2";
 import { clearFailedAttempts, isLocked, recordFailedAttempt } from "@/lib/auth";
 import { ensureMailboxAccess } from "@/lib/authorization";
-import { formatFromHeader } from "@/lib/email-address";
+import { extractEmailAddress, formatFromHeader } from "@/lib/email-address";
 import { plainTextToHtml } from "@/lib/email-content";
 import { getRecipientCandidates } from "@/lib/inbound";
 import { getNextMailPulseAt, MAIL_PULSE_INTERVAL_MS } from "@/lib/mail-pulse";
+import { MAX_TOTAL_ATTACHMENT_SIZE_BYTES, parseMessageAttachments } from "@/lib/message-attachments";
+import { getRequiredToRecipients } from "@/lib/resend";
 import { verifyResendWebhook } from "@/lib/resend-webhook";
 import { evaluateRules } from "@/lib/rules";
+import { MailboxSettingsSchema, SendMessageSchema } from "@/lib/validation";
 
 describe("email content", () => {
   it("renders plain-text bodies as escaped HTML while preserving line breaks", () => {
@@ -31,6 +34,11 @@ describe("sender display name", () => {
 
   it("falls back to the mailbox address when the display name is blank", () => {
     expect(formatFromHeader(" \r\n ", "sales@example.com")).toBe("sales@example.com");
+  });
+
+  it("extracts the address from a formatted sender header", () => {
+    expect(extractEmailAddress('"Sales Team" <sales@example.com>')).toBe("sales@example.com");
+    expect(extractEmailAddress("sales@example.com")).toBe("sales@example.com");
   });
 });
 
@@ -74,6 +82,107 @@ describe("inbound recipient resolution", () => {
       ["other@example.com", " SALES@LLCTUAR.COM "],
       ["Sales@llctuar.com"],
     )).toEqual(["sales@llctuar.com", "other@example.com"]);
+  });
+});
+
+describe("mailbox settings validation", () => {
+  it("accepts valid display and mailbox preferences", () => {
+    expect(MailboxSettingsSchema.safeParse({
+      displayName: "Sales Team",
+      signatureHtml: "<p>Regards</p>",
+      defaultFolder: "SENT",
+      theme: "LIGHT",
+      density: "COMPACT",
+    }).success).toBe(true);
+  });
+
+  it("rejects blank display names and unsupported preference values", () => {
+    expect(MailboxSettingsSchema.safeParse({
+      displayName: " ",
+      signatureHtml: "",
+      defaultFolder: "ARCHIVE",
+      theme: "SYSTEM",
+      density: "COMPACT",
+    }).success).toBe(false);
+  });
+});
+
+describe("send message validation", () => {
+  it("allows sending to BCC recipients without a To recipient", () => {
+    const result = SendMessageSchema.safeParse({
+      to: "",
+      cc: "",
+      bcc: "hidden@example.com",
+      subject: "Private update",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.to).toEqual([]);
+      expect(result.data.bcc).toEqual(["hidden@example.com"]);
+    }
+  });
+
+  it("requires at least one valid To, CC, or BCC recipient", () => {
+    expect(SendMessageSchema.safeParse({ to: "", cc: "", bcc: "" }).success).toBe(false);
+    expect(SendMessageSchema.safeParse({ to: "", cc: "", bcc: "not-an-email" }).success).toBe(false);
+  });
+
+  it("accepts a valid message id when composing a reply", () => {
+    expect(SendMessageSchema.safeParse({
+      to: "sender@example.com",
+      replyToMessageId: "c77e2c6d-6084-4a62-8acf-f40e9d640010",
+    }).success).toBe(true);
+  });
+
+  it("accepts a Reply-To email and rejects an invalid one", () => {
+    expect(SendMessageSchema.safeParse({
+      to: "recipient@example.com",
+      replyTo: "replies@example.com",
+    }).success).toBe(true);
+    expect(SendMessageSchema.safeParse({
+      to: "recipient@example.com",
+      replyTo: "not-an-email",
+    }).success).toBe(false);
+    expect(SendMessageSchema.safeParse({
+      to: "recipient@example.com",
+      replyTo: "",
+    }).success).toBe(true);
+  });
+});
+
+describe("provider recipient requirements", () => {
+  it("uses the sender as the required To recipient when To is blank", () => {
+    expect(getRequiredToRecipients([], "sender@example.com")).toEqual(["sender@example.com"]);
+  });
+
+  it("preserves explicitly entered To recipients", () => {
+    expect(getRequiredToRecipients(["to@example.com"], "sender@example.com"))
+      .toEqual(["to@example.com"]);
+  });
+});
+
+describe("message attachments", () => {
+  it("parses uploaded files with their name, content type, and bytes", async () => {
+    const formData = new FormData();
+    formData.append("attachments", new Blob(["hello"], { type: "text/plain" }), "hello.txt");
+
+    await expect(parseMessageAttachments(formData)).resolves.toEqual([{
+      filename: "hello.txt",
+      contentType: "text/plain",
+      buffer: Buffer.from("hello"),
+    }]);
+  });
+
+  it("rejects attachment uploads over the configured total size", async () => {
+    const formData = new FormData();
+    formData.append(
+      "attachments",
+      new Blob([new Uint8Array(MAX_TOTAL_ATTACHMENT_SIZE_BYTES + 1)]),
+      "large.bin",
+    );
+
+    await expect(parseMessageAttachments(formData)).rejects.toThrow("25 MB or less");
   });
 });
 

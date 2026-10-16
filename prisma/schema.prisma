@@ -9,20 +9,23 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
+  id            String         @id @default(uuid())
+  email         String         @unique
   passwordHash  String
   displayName   String
-  role          Role      @default(USER)
+  role          Role           @default(USER)
   signatureHtml String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  defaultFolder Folder         @default(INBOX)
+  theme         MailboxTheme   @default(DARK)
+  density       MailboxDensity @default(COMFORTABLE)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  messages Message[]
-  threads  Thread[]
-  rules    Rule[]
-  sessions Session[]
+  messages            Message[]
+  threads             Thread[]
+  rules               Rule[]
+  sessions            Session[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -40,24 +43,24 @@ model Session {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  token     String   @unique
+  user      User      @relation(fields: [userId], references: [id])
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }
 
 model MailPulse {
-  id           String   @id
+  id           String    @id
   nextSendAt   DateTime
   lastSentAt   DateTime?
   lastResendId String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Thread {
@@ -73,12 +76,12 @@ model Thread {
 }
 
 model Message {
-  id              String      @id @default(uuid())
+  id              String                   @id @default(uuid())
   userId          String
-  user            User        @relation(fields: [userId], references: [id])
+  user            User                     @relation(fields: [userId], references: [id])
   threadId        String
-  thread          Thread      @relation(fields: [threadId], references: [id])
-  folder          Folder      @default(INBOX)
+  thread          Thread                   @relation(fields: [threadId], references: [id])
+  folder          Folder                   @default(INBOX)
   direction       Direction
   messageIdHeader String?
   inReplyTo       String?
@@ -89,10 +92,10 @@ model Message {
   subject         String
   bodyHtml        String
   bodyText        String
-  isRead          Boolean     @default(false)
-  isFlagged       Boolean     @default(false)
+  isRead          Boolean                  @default(false)
+  isFlagged       Boolean                  @default(false)
   resendId        String?
-  receivedAt      DateTime    @default(now())
+  receivedAt      DateTime                 @default(now())
   searchVector    Unsupported("tsvector")?
 
   attachments Attachment[]
@@ -112,10 +115,20 @@ enum Direction {
   OUTBOUND
 }
 
+enum MailboxTheme {
+  DARK
+  LIGHT
+}
+
+enum MailboxDensity {
+  COMFORTABLE
+  COMPACT
+}
+
 model Attachment {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   messageId   String
-  message     Message  @relation(fields: [messageId], references: [id])
+  message     Message @relation(fields: [messageId], references: [id])
   filename    String
   contentType String
   sizeBytes   Int

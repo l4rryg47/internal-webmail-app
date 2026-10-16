@@ -1,0 +1,7 @@
+CREATE TYPE "MailboxTheme" AS ENUM ('DARK', 'LIGHT');
+CREATE TYPE "MailboxDensity" AS ENUM ('COMFORTABLE', 'COMPACT');
+
+ALTER TABLE "User"
+ADD COLUMN "defaultFolder" "Folder" NOT NULL DEFAULT 'INBOX',
+ADD COLUMN "theme" "MailboxTheme" NOT NULL DEFAULT 'DARK',
+ADD COLUMN "density" "MailboxDensity" NOT NULL DEFAULT 'COMFORTABLE';

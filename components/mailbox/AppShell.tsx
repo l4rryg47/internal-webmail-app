@@ -11,20 +11,33 @@ import { ComposePanel } from "./ComposePanel";
 interface AppShellProps {
   userRole?: "USER" | "ADMIN";
   userEmail?: string;
+  userDisplayName?: string;
+  defaultFolder?: "INBOX" | "SENT" | "DRAFTS" | "TRASH";
+  theme?: "DARK" | "LIGHT";
+  density?: "COMFORTABLE" | "COMPACT";
   folderCounts?: Record<string, number>;
 }
 
-export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShellProps) {
+export function AppShell({
+  userRole = "USER",
+  userEmail,
+  userDisplayName,
+  defaultFolder = "INBOX",
+  theme = "DARK",
+  density = "COMFORTABLE",
+  folderCounts,
+}: AppShellProps) {
   const router = useRouter();
-  const [selectedFolder, setSelectedFolder] = useState<string>("INBOX");
+  const [selectedFolder, setSelectedFolder] = useState<string>(defaultFolder);
   const [inboxUnreadCount, setInboxUnreadCount] = useState(folderCounts?.INBOX ?? 0);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [replyToMessageId, setReplyToMessageId] = useState<string | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isComposeMinimized, setIsComposeMinimized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [isFolderDrawerOpen, setIsFolderDrawerOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState<"mail" | "rules" | "admin">("mail");
+  const [activeNav, setActiveNav] = useState<"mail" | "rules" | "admin" | "settings">("mail");
 
   useEffect(() => {
     setInboxUnreadCount(folderCounts?.INBOX ?? 0);
@@ -36,11 +49,13 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
       window.location.href = "/rules";
     } else if (activeNav === "admin") {
       window.location.href = "/admin";
+    } else if (activeNav === "settings") {
+      window.location.href = "/settings";
     }
   }, [activeNav]);
 
   return (
-    <div className="mailbox-shell">
+    <div className={`mailbox-shell theme-${theme.toLowerCase()} density-${density.toLowerCase()}`}>
       {isFolderDrawerOpen && (
         <button
           className="mobile-folder-backdrop"
@@ -53,6 +68,7 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
         onNavChange={setActiveNav}
         userRole={userRole}
         userEmail={userEmail}
+        userDisplayName={userDisplayName}
       />
       <FolderSidebar
         selectedFolder={selectedFolder}
@@ -60,7 +76,10 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
           setSelectedFolder(folder);
           setIsFolderDrawerOpen(false);
         }}
-        onCompose={() => setIsComposeOpen(true)}
+        onCompose={() => {
+          setReplyToMessageId(null);
+          setIsComposeOpen(true);
+        }}
         folderCounts={{ INBOX: inboxUnreadCount }}
         isDrawerOpen={isFolderDrawerOpen}
       />
@@ -80,16 +99,22 @@ export function AppShell({ userRole = "USER", userEmail, folderCounts }: AppShel
       />
       <ReadingPane
         threadId={selectedThreadId}
-        onReply={() => setIsComposeOpen(true)}
+        onReply={() => {
+          setReplyToMessageId(selectedThreadId);
+          setIsComposeOpen(true);
+        }}
         onBack={() => setSelectedThreadId(null)}
       />
       {isComposeOpen && (
         <ComposePanel
           isOpen={isComposeOpen}
           isMinimized={isComposeMinimized}
-          onClose={() => setIsComposeOpen(false)}
+          onClose={() => {
+            setIsComposeOpen(false);
+            setReplyToMessageId(null);
+          }}
           onToggleMinimize={() => setIsComposeMinimized(!isComposeMinimized)}
-          replyToThreadId={selectedThreadId}
+          replyToMessageId={replyToMessageId}
         />
       )}
     </div>

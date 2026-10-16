@@ -1,18 +1,20 @@
 "use client";
 
 interface AppRailProps {
-  activeNav: "mail" | "rules" | "admin";
-  onNavChange: (nav: "mail" | "rules" | "admin") => void;
+  activeNav: "mail" | "rules" | "admin" | "settings";
+  onNavChange: (nav: "mail" | "rules" | "admin" | "settings") => void;
   userRole?: "USER" | "ADMIN";
   userEmail?: string;
+  userDisplayName?: string;
 }
 
-export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRailProps) {
-  const getInitials = (email?: string) => {
-    if (!email) return "?";
-    const name = email.split("@")[0];
-    return name.slice(0, 2).toUpperCase();
+export function AppRail({ activeNav, onNavChange, userRole, userEmail, userDisplayName }: AppRailProps) {
+  const getInitials = (name?: string) => {
+    if (!name) return "?";
+    const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("");
+    return initials.toUpperCase();
   };
+  const accountName = userDisplayName || userEmail || "User";
 
   const handleLogout = async () => {
     try {
@@ -47,6 +49,9 @@ export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRail
         <button className={`top-nav-item ${activeNav === "rules" ? "active" : ""}`} onClick={() => onNavChange("rules")}>
           Rules
         </button>
+        <button className={`top-nav-item ${activeNav === "settings" ? "active" : ""}`} onClick={() => onNavChange("settings")}>
+          Settings
+        </button>
         {userRole === "ADMIN" && (
           <button className={`top-nav-item ${activeNav === "admin" ? "active" : ""}`} onClick={() => onNavChange("admin")}>
             Admin
@@ -55,9 +60,9 @@ export function AppRail({ activeNav, onNavChange, userRole, userEmail }: AppRail
       </nav>
 
       <div className="top-nav-spacer" />
-      <span className="account-email">{userEmail}</span>
-      <button className="account-avatar" title={userEmail || "Account"} aria-label={`Signed in as ${userEmail || "user"}`}>
-        {getInitials(userEmail)}
+      <span className="account-email" title={userEmail}>{accountName}</span>
+      <button className="account-avatar" title={`${accountName} (${userEmail || "no email"})`} aria-label={`Signed in as ${accountName}`}>
+        {getInitials(userDisplayName || userEmail)}
       </button>
       <button className="logout-button" onClick={handleLogout}>Sign out</button>
     </header>
