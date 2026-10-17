@@ -11,7 +11,7 @@ import { MAX_TOTAL_ATTACHMENT_SIZE_BYTES, parseMessageAttachments } from "@/lib/
 import { getRequiredToRecipients } from "@/lib/resend";
 import { verifyResendWebhook } from "@/lib/resend-webhook";
 import { evaluateRules } from "@/lib/rules";
-import { MailboxSettingsSchema, SendMessageSchema } from "@/lib/validation";
+import { MailboxSettingsSchema, MessageUpdateSchema, SendMessageSchema } from "@/lib/validation";
 
 describe("email content", () => {
   it("renders plain-text bodies as escaped HTML while preserving line breaks", () => {
@@ -148,6 +148,20 @@ describe("send message validation", () => {
       to: "recipient@example.com",
       replyTo: "",
     }).success).toBe(true);
+  });
+});
+
+describe("message update validation", () => {
+  it("allows supported message actions", () => {
+    expect(MessageUpdateSchema.safeParse({ folder: "TRASH" }).success).toBe(true);
+    expect(MessageUpdateSchema.safeParse({ isFlagged: true }).success).toBe(true);
+    expect(MessageUpdateSchema.safeParse({ isRead: false }).success).toBe(true);
+  });
+
+  it("rejects empty updates, unsupported folders, and unexpected fields", () => {
+    expect(MessageUpdateSchema.safeParse({}).success).toBe(false);
+    expect(MessageUpdateSchema.safeParse({ folder: "ARCHIVE" }).success).toBe(false);
+    expect(MessageUpdateSchema.safeParse({ permanentlyDelete: true }).success).toBe(false);
   });
 });
 

@@ -136,7 +136,11 @@ export function ThreadList({
 
     markingRead.current.add(message.id);
     try {
-      const response = await fetch(`/api/messages/${message.id}`, { method: "PATCH" });
+      const response = await fetch(`/api/messages/${message.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true }),
+      });
       if (!response.ok) {
         console.error("Failed to mark message as read:", response.statusText);
         return;

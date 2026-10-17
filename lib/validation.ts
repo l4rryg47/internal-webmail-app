@@ -38,6 +38,15 @@ export const SendMessageSchema = z.object({
   { message: "At least one recipient is required." },
 );
 
+export const MessageUpdateSchema = z.object({
+  isRead: z.boolean().optional(),
+  isFlagged: z.boolean().optional(),
+  folder: z.enum(["INBOX", "SENT", "DRAFTS", "TRASH"]).optional(),
+}).strict().refine(
+  (update) => Object.keys(update).length > 0,
+  { message: "At least one message field must be updated." },
+);
+
 export const MailboxSettingsSchema = z.object({
   displayName: z.string().trim().min(1).max(80),
   signatureHtml: z.string().max(20_000),

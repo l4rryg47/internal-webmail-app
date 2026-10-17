@@ -31,7 +31,8 @@ export function AppShell({
   const [selectedFolder, setSelectedFolder] = useState<string>(defaultFolder);
   const [inboxUnreadCount, setInboxUnreadCount] = useState(folderCounts?.INBOX ?? 0);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-  const [replyToMessageId, setReplyToMessageId] = useState<string | null>(null);
+  const [composeSourceMessageId, setComposeSourceMessageId] = useState<string | null>(null);
+  const [composeMode, setComposeMode] = useState<"new" | "reply" | "replyAll" | "forward">("new");
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isComposeMinimized, setIsComposeMinimized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,7 +78,8 @@ export function AppShell({
           setIsFolderDrawerOpen(false);
         }}
         onCompose={() => {
-          setReplyToMessageId(null);
+          setComposeSourceMessageId(null);
+          setComposeMode("new");
           setIsComposeOpen(true);
         }}
         folderCounts={{ INBOX: inboxUnreadCount }}
@@ -99,11 +101,21 @@ export function AppShell({
       />
       <ReadingPane
         threadId={selectedThreadId}
-        onReply={() => {
-          setReplyToMessageId(selectedThreadId);
+        onCompose={(mode) => {
+          setComposeSourceMessageId(selectedThreadId);
+          setComposeMode(mode);
           setIsComposeOpen(true);
         }}
         onBack={() => setSelectedThreadId(null)}
+        onMessageRemoved={() => {
+          setSelectedThreadId(null);
+          setRefreshKey((key) => key + 1);
+          router.refresh();
+        }}
+        onMessageUpdated={() => {
+          setRefreshKey((key) => key + 1);
+          router.refresh();
+        }}
       />
       {isComposeOpen && (
         <ComposePanel
@@ -111,10 +123,17 @@ export function AppShell({
           isMinimized={isComposeMinimized}
           onClose={() => {
             setIsComposeOpen(false);
-            setReplyToMessageId(null);
+            setComposeSourceMessageId(null);
+            setComposeMode("new");
           }}
           onToggleMinimize={() => setIsComposeMinimized(!isComposeMinimized)}
-          replyToMessageId={replyToMessageId}
+          sourceMessageId={composeSourceMessageId}
+          mode={composeMode}
+          userEmail={userEmail}
+          onSent={() => {
+            setRefreshKey((key) => key + 1);
+            router.refresh();
+          }}
         />
       )}
     </div>

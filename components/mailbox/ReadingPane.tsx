@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MessageHeader } from "./MessageHeader";
 import { MessageBody } from "./MessageBody";
 import { ActionBar } from "./ActionBar";
 
 interface ReadingPaneProps {
   threadId: string | null;
-  onReply: () => void;
+  onCompose: (mode: "reply" | "replyAll" | "forward") => void;
   onBack: () => void;
+  onMessageRemoved: () => void;
+  onMessageUpdated: () => void;
 }
 
 interface Message {
@@ -18,6 +20,8 @@ interface Message {
   toAddresses: string[];
   ccAddresses: string[];
   receivedAt: string;
+  folder: string;
+  isFlagged: boolean;
   bodyText: string;
   bodyHtml: string;
   attachments: Array<{
@@ -28,10 +32,18 @@ interface Message {
   }>;
 }
 
-export function ReadingPane({ threadId, onReply, onBack }: ReadingPaneProps) {
+export function ReadingPane({
+  threadId,
+  onCompose,
+  onBack,
+  onMessageRemoved,
+  onMessageUpdated,
+}: ReadingPaneProps) {
   const [message, setMessage] = useState<Message | null>(null);
   const [loading, setLoading] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [isActionPending, setIsActionPending] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -50,14 +62,17 @@ export function ReadingPane({ threadId, onReply, onBack }: ReadingPaneProps) {
       }
 
       setLoading(true);
+      setActionError("");
       try {
         const response = await fetch(`/api/messages/${threadId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setMessage(data);
+        if (!response.ok) {
+          throw new Error("Unable to load this message.");
         }
+        const data = await response.json();
+        setMessage(data);
       } catch (error) {
         console.error("Failed to fetch message:", error);
+        setMessage(null);
       } finally {
         setLoading(false);
       }
@@ -66,21 +81,68 @@ export function ReadingPane({ threadId, onReply, onBack }: ReadingPaneProps) {
     fetchMessage();
   }, [threadId]);
 
+  const updateMessage = useCallback(async (changes: { folder?: string; isFlagged?: boolean }) => {
+    if (!message || isActionPending) return;
+
+    setIsActionPending(true);
+    setActionError("");
+    try {
+      const response = await fetch(`/api/messages/${message.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changes),
+      });
+      if (!response.ok) {
+        throw new Error("Unable to update this message.");
+      }
+
+      const updated = await response.json();
+      setMessage((current) => current ? { ...current, ...updated } : current);
+      if (changes.folder) {
+        onMessageRemoved();
+      } else {
+        onMessageUpdated();
+      }
+    } catch (error) {
+      console.error("Failed to update message:", error);
+      setActionError(error instanceof Error ? error.message : "Unable to update this message.");
+    } finally {
+      setIsActionPending(false);
+    }
+  }, [isActionPending, message, onMessageRemoved, onMessageUpdated]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!message) return;
       // Only handle shortcuts when not in an input field
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (
+        e.target instanceof HTMLInputElement
+        || e.target instanceof HTMLTextAreaElement
+        || e.target instanceof HTMLSelectElement
+        || (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) return;
 
       if (e.key === "r" || e.key === "R") {
         e.preventDefault();
-        onReply();
+        onCompose("reply");
+      } else if (e.key === "a" || e.key === "A") {
+        e.preventDefault();
+        onCompose("replyAll");
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        onCompose("forward");
+      } else if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        void updateMessage({ folder: message.folder === "TRASH" ? "INBOX" : "TRASH" });
+      } else if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        void updateMessage({ isFlagged: !message.isFlagged });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [message, onReply]);
+  }, [message, onCompose, updateMessage]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -155,6 +217,7 @@ export function ReadingPane({ threadId, onReply, onBack }: ReadingPaneProps) {
         </button>
       )}
       <div className="reading-pane-content">
+        {actionError && <div className="compose-error" role="alert">{actionError}</div>}
         <MessageHeader
           subject={message.subject || "(no subject)"}
           from={message.fromAddress}
@@ -180,7 +243,20 @@ export function ReadingPane({ threadId, onReply, onBack }: ReadingPaneProps) {
           </div>
         )}
       </div>
-      <ActionBar onReply={onReply} />
+      <ActionBar
+        onReply={() => onCompose("reply")}
+        onReplyAll={() => onCompose("replyAll")}
+        onForward={() => onCompose("forward")}
+        onDelete={() => {
+          void updateMessage({ folder: message.folder === "TRASH" ? "INBOX" : "TRASH" });
+        }}
+        onToggleFlag={() => {
+          void updateMessage({ isFlagged: !message.isFlagged });
+        }}
+        isFlagged={message.isFlagged}
+        isTrashed={message.folder === "TRASH"}
+        disabled={isActionPending}
+      />
     </div>
   );
 }

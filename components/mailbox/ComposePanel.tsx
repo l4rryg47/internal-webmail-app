@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { sendMessage } from "@/actions/send-message";
 import { extractEmailAddress } from "@/lib/email-address";
+import { plainTextToHtml } from "@/lib/email-content";
 import "react-quill/dist/quill.snow.css";
 
 // Dynamically import ReactQuill to avoid SSR issues
@@ -14,14 +15,32 @@ interface ComposePanelProps {
   isMinimized: boolean;
   onClose: () => void;
   onToggleMinimize: () => void;
-  replyToMessageId?: string | null;
+  sourceMessageId?: string | null;
+  mode?: "new" | "reply" | "replyAll" | "forward";
+  userEmail?: string;
+  onSent: () => void;
 }
 
 interface ReplyMessage {
+  id: string;
   fromAddress: string;
   toAddresses: string[];
+  ccAddresses: string[];
   subject: string;
+  bodyText: string;
+  bodyHtml: string;
+  receivedAt: string;
   direction: "INBOUND" | "OUTBOUND";
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    if (character === "&") return "&amp;";
+    if (character === "<") return "&lt;";
+    if (character === ">") return "&gt;";
+    if (character === '"') return "&quot;";
+    return "&#39;";
+  });
 }
 
 export function ComposePanel({
@@ -29,7 +48,10 @@ export function ComposePanel({
   isMinimized,
   onClose,
   onToggleMinimize,
-  replyToMessageId,
+  sourceMessageId,
+  mode = "new",
+  userEmail,
+  onSent,
 }: ComposePanelProps) {
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
@@ -44,7 +66,7 @@ export function ComposePanel({
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!replyToMessageId) return;
+    if (!sourceMessageId) return;
 
     let cancelled = false;
     setIsLoadingReply(true);
@@ -52,18 +74,36 @@ export function ComposePanel({
 
     async function loadReplyMessage() {
       try {
-        const response = await fetch(`/api/messages/${replyToMessageId}`);
+        const response = await fetch(`/api/messages/${sourceMessageId}`);
         if (!response.ok) {
           throw new Error("Unable to load the message you are replying to.");
         }
         const message = await response.json() as ReplyMessage;
         if (cancelled) return;
 
-        const recipient = message.direction === "OUTBOUND"
-          ? message.toAddresses[0]
-          : message.fromAddress;
-        setTo(recipient ? extractEmailAddress(recipient) : "");
-        setSubject(/^re:/i.test(message.subject) ? message.subject : `Re: ${message.subject || "(no subject)"}`);
+        const currentEmail = userEmail?.toLowerCase();
+        const sender = extractEmailAddress(message.fromAddress);
+        const senderIsCurrentUser = sender.toLowerCase() === currentEmail;
+        const otherRecipients = [...message.toAddresses, ...message.ccAddresses]
+          .map(extractEmailAddress)
+          .filter((address) => address && address.toLowerCase() !== currentEmail);
+        const uniqueOtherRecipients = Array.from(new Set(
+          otherRecipients.filter((address) => address.toLowerCase() !== sender.toLowerCase()),
+        ));
+        const replyToAddress = senderIsCurrentUser ? uniqueOtherRecipients.shift() : sender;
+        setTo(mode === "forward" ? "" : replyToAddress || "");
+        setCc(mode === "replyAll" ? uniqueOtherRecipients.join(", ") : "");
+
+        const subject = message.subject || "(no subject)";
+        setSubject(mode === "forward"
+          ? (/^fwd?:/i.test(subject) ? subject : `Fwd: ${subject}`)
+          : (/^re:/i.test(subject) ? subject : `Re: ${subject}`));
+
+        const body = message.bodyHtml || plainTextToHtml(message.bodyText);
+        const quoteHeader = mode === "forward"
+          ? `<p>---------- Forwarded message ----------<br>From: ${escapeHtml(message.fromAddress)}<br>Sent: ${escapeHtml(new Date(message.receivedAt).toLocaleString())}<br>Subject: ${escapeHtml(subject)}</p>`
+          : `<p>On ${escapeHtml(new Date(message.receivedAt).toLocaleString())}, ${escapeHtml(message.fromAddress)} wrote:</p>`;
+        setHtml(`<p><br></p>${quoteHeader}<blockquote>${body}</blockquote>`);
       } catch (error) {
         if (!cancelled) {
           setReplyError(error instanceof Error ? error.message : "Unable to load the reply details.");
@@ -77,7 +117,7 @@ export function ComposePanel({
     return () => {
       cancelled = true;
     };
-  }, [replyToMessageId]);
+  }, [sourceMessageId, mode, userEmail]);
 
   if (!isOpen) return null;
 
@@ -92,26 +132,31 @@ export function ComposePanel({
     formData.append("replyTo", replyTo);
     formData.append("subject", subject);
     formData.append("html", html);
-    if (replyToMessageId) formData.append("replyToMessageId", replyToMessageId);
+    if (sourceMessageId && (mode === "reply" || mode === "replyAll")) {
+      formData.append("replyToMessageId", sourceMessageId);
+    }
     attachments.forEach((attachment) => formData.append("attachments", attachment));
 
-    const result = await sendMessage(formData);
-
-    setIsSending(false);
-
-    if (result.success) {
-      onClose();
-      // Reset form
-      setTo("");
-      setCc("");
-      setBcc("");
-      setReplyTo("");
-      setSubject("");
-      setHtml("");
-      setAttachments([]);
-      if (fileInput.current) fileInput.current.value = "";
-    } else {
-      alert(result.error || "Failed to send message");
+    try {
+      const result = await sendMessage(formData);
+      if (result.success) {
+        setTo("");
+        setCc("");
+        setBcc("");
+        setReplyTo("");
+        setSubject("");
+        setHtml("");
+        setAttachments([]);
+        if (fileInput.current) fileInput.current.value = "";
+        onSent();
+        onClose();
+      } else {
+        setReplyError(result.error || "Failed to send message");
+      }
+    } catch (error) {
+      setReplyError(error instanceof Error ? error.message : "Failed to send message");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -146,7 +191,7 @@ export function ComposePanel({
     <div className={`compose-panel ${isMinimized ? "minimized" : ""}`}>
       <div className="compose-header" onClick={onToggleMinimize}>
         <span className="compose-title">
-          {replyToMessageId ? "Reply to Message" : "New Message"}
+          {mode === "forward" ? "Forward Message" : mode === "replyAll" ? "Reply All" : mode === "reply" ? "Reply to Message" : "New Message"}
         </span>
         <div className="compose-actions">
           <button
